@@ -1,52 +1,87 @@
-# amazonecho-secret
-Secret Keeper 
+Purpose
 
-*Introduction*
+Have access to a widespread database filled with the store hours and store locations for your local retailers. Find out if the store you are looking for is still open after your late-night shift, or be there first thing in the morning by knowing their hours of operation and store location. Creating a must have for the late night crowd, first-responders or 24 hour shift workers, or even just finishing errands on a weeknight.
 
-Sometimes we have some secrets but we can't find the right person to share them with, so I thought Alexa might be the 
-ideal place to do it anonymously.  Wouldn't be fun to hear secrets from all over the world? What if we could exchange 
-secret messages with other users through Alexa? well... that's the goal of Alexa's Secret. 
+Are you looking for Best Buy Store hours? Need Walmart store hours, Looking for pizza that is open late? Grab last minute purchases or late night food from local places with help from our store hours and store locations database. Rather than calling one store location at a time, this skill provides you with store hours and alternate business listings just by asking.
+
+The built-in information is not enough
+Asking Alexa for business hours will let you disappointed, Alexa uses Yelp as source of information for business hours however this built-in skill has two main deficiencies:
+
+1- There's no business hours information for all the businesses
+
+2-There's no way to get information about businesses in your area if you live in another country.
+
+Still On comes to the rescue providing a platform that provides business hours for all the places in most of the countries.
+
+We use your real location
+Still On does not work with Alexa's default location, the problem with that location is that it doesn't allow addresses outside the US, I wanted Still On to be a tool for international users as well (I live in Costa Rica).
+
+Still On gets your location in the account linking page with two simple steps:
+
+https://hackster.imgix.net/uploads/attachments/176886/Screenshot_20160731-230344.png?w=680&h=510&fit=max
+
+Copy the link in step 1 and paste it in your phone browser
+Copy the link in step 1 and paste it in your phone browser
+Allow your browser to use your location, click on copy location
+Allow your browser to use your location, click on copy location
+Paste your location on step 2 and click on Use this location
+Paste your location on step 2 and click on Use this location
+Done, your location is now set as default for Still On
+Done, your location is now set as default for Still On
 
 
-*Making Alexa Social*
+Real location Account Linking Page
+I came up with the page flow above by looking at the original hack to use the authorization token as bridge of information, created by Colin-McGraw in the Tickle Monster Skill.
 
-Most of the existing Alexa skills do not allow interaction with other Alexa owners so I wanted to create a channel to 
-provide that. Most of the input you can provide to other skills is constrained to a handful of words, 
-I did some research, and most of the custom skills that allow free input, they fail in one thing, they never get it right. 
-So I tried be focused on that issue.
+What I'm doing is pretty much forcing the user to open a site in a browser that asks for location and then having the user copy the geo coordinates back to the Alexa App. The extra step of opening a browser is required only because the Alexa App prevents any popup that request permissions, otherwise I would have done it the same page, once I have the geo coordinates I'm using the auth token as way of sending the collected coordinates back to my lambda program, same as Tickle Monster does, no need of DB or any other kind of storage.
 
-*Programming Story*
+Demo
 
-First of all just to be in context, I'm working with nodejs, lambda and mongodb. 
+Using Costa Rica Address
 
-The main goal here is to store secrets, for that a central point of storage is needed so mongodb (mlab and mongoose)
-was my choice, no particular reason, I'm more familiar with it and I wanted to code as fast as possible. 
+https://youtu.be/WT-k3263mbc
 
-I wanted to have two different types of secrets (public and private), my current architecture is based on controllers
-so a controller to handle the db operations was needed, this is where the SecretController comes in,
-allows to: add secrets, get a random public secret, and get private secret by password.
+Using US Address
 
-In order to have private secrets a password was needed, and here is when my First Challenge appears, normal passwords
-are not a good choice in a voice environment, so I had come up with something simple like using 3 simple words as a
-password, this sounds like a good idea but in practice Alexa gets easily confused, so I ended up using numbers instead
-of words for simplicity, thanks to the NUMBER slots I was getting better results. The PasswordController is in charge
-of providing us with two numbers to be used as passwords for the private secrets. eg. "My numbers are 900 and 800"
-So far so good, as I explained earlier, getting the free input was my Second Challenge, I noticed the experience with
-other free form input skills was really poor, and I truly wanted to provide at least a better experience. 
+https://youtu.be/iWt16WKfbgg
 
-Going through the documentation I noticed that literal fields evolved into custom slots. I was getting bad results using
-either one, just half of my sentence or a single word, pretty much the same as the other skills I found in the Alexa App.
-I realized that my custom slot was missing training, or similar examples, I decided to train my slot with thousands
-of secrets I found online, by providing my custom slot with those secrets as examples I was able to get better results on
-my free form input.
+Current Status
+Certified
 
-The process of finding those secrets and cleaning them to be used in my slot was really hard, the slot is currently using
-around 23000 secrets as examples, it's not perfect but covers the basic structure of common secrets and provides a better
-experience in most of the sentences. Secrets must be short.
+http://alexa.amazon.com/spa/index.html#skills/dp/B01JA5A88Y/?ref=skill_dsk_skb_sr_0
 
-Finally after putting all the pieces together, I decide to had sounds and pauses, to provide a better experience for the
-user and I also tried to make Alexa looks like she is truly interested on your secret.
+Origin of Information
 
-*Integration with Raspberry PI*
-I put the Alexa Voice Service on my raspberry pi, so in the demo I exchange secrets between my real Amazo Echo and
-my Alexa Voice Service on the raspberry pi.
+This skill retrieves all its information by doing a web scraping on the public site stillopen.com all the credit on the info goes to them, I just exposed their site as an Alexa Skill, they don't provide any kind of api, and I couldn't find any kind of publicity or copyright policy that prevent me from extracting the information.
+
+Live Web Scraping Technique
+
+Since stillopen.com does not provide any kind of API, I decided to use Jam API, a service that allows you to turn any site into a JSON accessible api using CSS selectors, I went through the site and by inspecting their css classes I was able to define a model to extract the businesses information and hours.
+
+By using a combination of the input from the user, the jam api model and the coordinates that I previously collected in the singup page, I can make realtime requests to stillopen.com and retrieve information of businesses in a json format, and eventually have Alexa output that information.
+
+Jam API Model
+
+{
+"title": "title",
+"Names": [{"elem": "span.placeName", "Link": "href", "Name": "text"}],
+"Links":[{"elem": "#placesList a",  "Link":"href"}],
+"Addresses": [{"elem": "span.placeAddr", "Address": "text"}],
+"Distances": [{"elem": "span.milesAway", "Distance": "text"}],
+"CloseOpen": [{"elem": ".placeImages", "class": "html"}]
+}
+
+Cards Info
+
+Still On will let you know how many open businesses are that match your request and which one is the nearest, if there's more than one you'll be able to find information about them in the Alexa App, Still On will include the business hours information and also a link to drive there, I'm using google maps to generate the driving link and also goo.gl to make the urls to the maps short and easy to copy. Still On even provides addresses in countries where directions and street names are not well defined (like mine).
+
+Using US address
+
+https://hackster.imgix.net/uploads/attachments/176902/Screenshot_20160801-001142.png?w=680&h=510&fit=max
+
+Using Costa Rica address
+
+https://hackster.imgix.net/uploads/attachments/176901/Screenshot_20160801-001254.png?w=680&h=510&fit=max
+
+Disclaimer
+No copyright infringement intended, I'm just collecting information publicly available.
